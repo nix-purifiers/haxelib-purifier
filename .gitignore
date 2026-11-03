@@ -1,0 +1,12 @@
+result*
+.haxelib-purifier/
+compiled/
+__pycache__/
+*.pyc
+sdk
+*.log
+
+cli
+cli-current
+.scratch/
+cli-ready
