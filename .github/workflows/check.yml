@@ -18,6 +18,7 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - run: python3 tests/eval-errors.py
       - run: nix flake check -L
+      - run: python3 tests/browser-negative.py
       - run: python3 tests/conformance.py
       - run: python3 tests/capture.py
       - name: Rebuild the project outputs
@@ -27,3 +28,4 @@ jobs:
             ".#checks.$purifier_system.environment" \
             ".#checks.$purifier_system.project" \
             ".#checks.$purifier_system.release"
+          nix build --rebuild --no-link ".#checks.$purifier_system.browser"

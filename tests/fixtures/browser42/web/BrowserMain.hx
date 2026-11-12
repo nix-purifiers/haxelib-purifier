@@ -1,0 +1,1 @@
+class BrowserMain { static function main() { final element = js.Browser.document.getElementById("answer"); element.setAttribute("data-color", js.Browser.window.getComputedStyle(element).color); element.textContent = tink.Json.stringify({answer:42}); } }

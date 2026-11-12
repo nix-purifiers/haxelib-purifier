@@ -83,6 +83,48 @@ It exposes evaluation-known `packages`, `tests`, `release` and `fetches`.
 `checkCommand`, `installCommand`, `doCheck` or `nativeBuildInputs` for the project.
 The default build command is `haxe build.hxml`; the default check command is empty.
 
+## JavaScript browser projections
+
+Declare a browser entrypoint independently of the project's normal HXML target:
+
+```nix
+project = pkgs.haxelib-purifier.buildHaxeProject {
+  src = ./.;
+  javascriptTargets.site = {
+    main = "BrowserMain";
+    classPaths = [ "web" ];
+    assets = { "index.html" = "web/index.html"; "style.css" = "web/style.css"; };
+    webjar = { groupId = "org.webjars.haxe"; artifactId = "my-site"; version = "1.0.0"; };
+  };
+};
+```
+
+The native Haxe compiler builds the selected main class using the frozen
+Haxelib repository. For a package project, the project's own `-lib` selection
+includes its native class path and declared dependencies. Optional `libraries`
+can select other captured libraries explicitly. New or version-overridden
+libraries require relocking.
+
+`javascript.site` and `packages.javascript-site` contain the browser bundle
+and explicitly selected public assets. Esbuild uses its browser target and
+rejects unresolved imports, including Node built-ins. Native compiler output,
+typed XML, bundle input ownership/hashes and compiler versions remain in the
+separate `.proof` output. Public assets and class paths must stay inside the
+project source.
+
+`projections.site.web` exposes a static document root and Java resource JAR.
+Optional WebJar coordinates add `.maven` and `.ivy` projections; their
+publication identities retain the producing build. Existing native Haxe
+builds and source releases keep their normal interfaces.
+
+The checks build two genuine browser revisions with locked `tink_json`,
+execute them in Chromium from the native tree and HTTP resources, and resolve
+their WebJars through ordinary offline Gradle. A Java HTTP server serves the
+resolved JAR through an isolated ClassLoader, with exact origin/hash checks.
+Missing scripts, compiled replacements, private-resource exposure, invalid
+main classes, system-only targets, escaping assets and Node-only imports
+have separate controls.
+
 ## Credits
 
 The purifier idea was inspired by nixcloud's
