@@ -53,7 +53,7 @@ runCommand "purified-haxelib-environment"
   ''
     export PATH=${toolchain}/bin:$PATH HOME="$TMPDIR/home"
     mkdir -p "$HOME" "$out"
-    python3 ${../haxelib_purifier/stage.py} ${manifest} ${sources} "$out" \
+    python3 ${../../haxelib_purifier/stage.py} ${manifest} ${sources} "$out" \
       ${nativeHaxelib}/bin/haxelib ${nativeHaxelib}/bin/haxelib-purifier-inspect
     cp ${manifest} "$out/capture.json"
     ln -s ${sources} "$out/sources"

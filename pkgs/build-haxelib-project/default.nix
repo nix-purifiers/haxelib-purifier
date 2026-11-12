@@ -34,7 +34,9 @@
     ]),
 }:
 let
-  lock = purifier.checkLock (import ./read-lock.nix { inherit lib; } { inherit src lockFile; });
+  lock = purifier.checkLock (
+    import ../../lib-overlays/default/read-lock.nix { inherit lib; } { inherit src lockFile; }
+  );
   environment = import ./environment.nix {
     inherit
       lib
@@ -170,7 +172,7 @@ let
         mkdir -p "$HOME" "$out/source" "$out/bin"
         cp -pr ${source}/. "$out/source/"
         chmod -R u+w "$out/source"
-        python3 ${../haxelib_purifier/prepare.py} ${environment}/capture.json ${environment} "$out/repository" "$out/source" \
+        python3 ${../../haxelib_purifier/prepare.py} ${environment}/capture.json ${environment} "$out/repository" "$out/source" \
           ${nativeHaxelib}/bin/haxelib ${nativeHaxelib}/bin/haxelib-purifier-inspect
         cd "$out/source"
         ${buildCommand}
@@ -240,7 +242,7 @@ let
         cp -pr ${source}/. source/
         chmod -R u+w source
         cp ${lockFile} source/haxelib-purifier.lock.json
-        python3 ${../haxelib_purifier/release.py} ${manifest} "$PWD/source" "$out" ${nativeHaxelib}/bin/haxelib-purifier-inspect
+        python3 ${../../haxelib_purifier/release.py} ${manifest} "$PWD/source" "$out" ${nativeHaxelib}/bin/haxelib-purifier-inspect
       '';
 in
 assert lock.problems == [ ];

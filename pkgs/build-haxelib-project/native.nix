@@ -18,9 +18,9 @@ stdenvNoCC.mkDerivation {
   dontConfigure = true;
   buildPhase = ''
     cd extra/haxelib_src
-    python ${../haxelib_purifier/patch-sdk.py}
+    python ${../../haxelib_purifier/patch-sdk.py}
     haxe client.hxml
-    cp ${../haxelib_purifier/PurifierInspect.hx} PurifierInspect.hx
+    cp ${../../haxelib_purifier/PurifierInspect.hx} PurifierInspect.hx
     haxe -cp src -cp hx3compat/std -cp . -main PurifierInspect -neko inspect.n
   '';
   installPhase = ''
