@@ -19,6 +19,7 @@
   fetchers ? { },
   nativeBuildInputs ? [ ],
   javascriptTargets ? { },
+  pythonTargets ? { },
   doCheck ? true,
   buildCommand ? "haxe build.hxml",
   checkCommand ? "",
@@ -121,6 +122,59 @@ let
     && builtins.all (name: coordinate name && valid javascriptTargets.${name}) (
       builtins.attrNames javascriptTargets
     );
+  pythonEffective =
+    target:
+    target
+    // {
+      libraries = target.libraries or (lib.optional lock.data.project.package lock.data.project.name);
+    };
+  validPython =
+    target:
+    builtins.isAttrs target
+    && builtins.all (
+      key:
+      builtins.elem key [
+        "types"
+        "classPaths"
+        "libraries"
+        "module"
+        "distribution"
+        "version"
+        "requirements"
+        "dependencies"
+      ]
+    ) (builtins.attrNames target)
+    && builtins.isList (target.types or null)
+    && target.types != [ ]
+    && builtins.length target.types == builtins.length (lib.unique target.types)
+    && builtins.all (
+      name:
+      builtins.isString name
+      && builtins.match "[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*" name != null
+    ) target.types
+    && builtins.isList (target.classPaths or [ ])
+    && builtins.all (path: path == "." || relative path) (target.classPaths or [ ])
+    && builtins.isList (target.libraries or [ ])
+    && builtins.all (
+      name:
+      builtins.isString name
+      && (name == lock.data.project.name || builtins.any (node: node.name == name) lock.data.nodes)
+    ) (target.libraries or [ ])
+    && builtins.isString (target.module or null)
+    && builtins.match "[A-Za-z_][A-Za-z0-9_]*" target.module != null
+    && builtins.isString (target.distribution or null)
+    && target.distribution != ""
+    && builtins.isString (target.version or null)
+    && target.version != ""
+    && builtins.isList (target.requirements or [ ])
+    && builtins.all builtins.isString (target.requirements or [ ])
+    && builtins.isList (target.dependencies or [ ]);
+  validPythonTargets =
+    builtins.isAttrs pythonTargets
+    && builtins.all (
+      name:
+      coordinate name && validPython pythonTargets.${name} && !(builtins.hasAttr name javascriptTargets)
+    ) (builtins.attrNames pythonTargets);
   specs = lib.mapAttrs (
     name: target: writeText "haxe-javascript-${name}.json" (builtins.toJSON (effective target))
   ) javascriptTargets;
@@ -224,7 +278,23 @@ let
         );
     }
   ) javascriptTargets;
-  projections = lib.mapAttrs (_: artifact: artifact.projections) javascript;
+  python =
+    import ./python-products.nix
+      {
+        inherit
+          lib
+          runCommand
+          python3
+          purifier
+          haxe
+          ;
+      }
+      {
+        producer = rawProject;
+        inherit environment;
+        targets = lib.mapAttrs (_: pythonEffective) pythonTargets;
+      };
+  projections = lib.mapAttrs (_: artifact: artifact.projections) (javascript // python);
   project = rawProject // {
     inherit projections;
   };
@@ -246,6 +316,8 @@ let
       '';
 in
 assert lock.problems == [ ];
+assert lib.assertMsg validPythonTargets
+  "haxelib-purifier: pythonTargets requires selected native types, relative class paths, captured libraries, Python module/distribution/version, explicit requirements and typed dependencies; target names must be distinct";
 assert lib.assertMsg validTargets
   "haxelib-purifier: javascriptTargets requires a native Haxe main class, captured libraries, relative class paths/public assets and optional WebJar coordinates";
 assert lib.assertMsg (
@@ -261,8 +333,9 @@ assert lib.assertMsg (
     default = project;
     inherit project environment;
   }
-  // lib.mapAttrs' (name: artifact: lib.nameValuePair "javascript-${name}" artifact) javascript;
-  inherit javascript projections;
+  // lib.mapAttrs' (name: artifact: lib.nameValuePair "javascript-${name}" artifact) javascript
+  // lib.mapAttrs' (name: artifact: lib.nameValuePair "python-${name}" artifact) python;
+  inherit javascript python projections;
   tests = project;
   inherit release;
   fetches = lock.entries;

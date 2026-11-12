@@ -129,3 +129,11 @@ have separate controls.
 
 The purifier idea was inspired by nixcloud's
 [cargo (libnix)](https://github.com/nixcloud/cargo).
+
+### Native Python library projections
+
+Use `pythonTargets.library = { types = [ "example.Api" ]; module = "example_api"; distribution = "example-api"; version = "1.0.0"; };` to compile selected Haxe types with the native Python backend, without an executable main class. Optional `classPaths` and `libraries` select relative project paths and locked Haxelib packages. The default library is the captured project package.
+
+`packages.python-library` and `python.library` contain a native PEP 517 wheel, with a separate `proof` output. `projections.library.python` is an immutable wheelhouse for ordinary Python installers. The generated module retains the native Haxe Python class names. Its source bytes are checked in the raw wheel and retained with the native typed model, compiler input paths, hashes and ownership by project, captured library or selected Haxe SDK.
+
+Python imports introduced by Haxe extern declarations use explicit PEP 508 `requirements`. Supply their packages through `dependencies = [ otherPackage ];`, where each package exposes `projections.python`. The existing Python projector retains those runtime wheels and rewrites dependency versions to the selected immutable identities. This adapter does not infer Python distribution names from import names. Build tools are not runtime dependencies. Native Haxe static initializers retain their ordinary import behavior.
