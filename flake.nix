@@ -2,7 +2,7 @@
   description = "Locked, Nix-resolved Haxe libraries";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.purifier = {
-    url = "github:nix-purifiers/purifier";
+    url = "github:nix-purifiers/purifier/v0.1.63";
     flake = false;
   };
   outputs =
@@ -69,6 +69,7 @@
           '';
         in
         {
+          browser = import ./tests/browser.nix { inherit pkgs; };
           inherit (build.packages) environment project;
           release = build.release;
           cli = self.packages.${system}.default;
