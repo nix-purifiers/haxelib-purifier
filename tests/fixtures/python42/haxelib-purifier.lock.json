@@ -1,0 +1,97 @@
+{
+  "currents": {
+    "tink_core": "2.1.1",
+    "tink_json": "0.11.0",
+    "tink_macro": "1.0.4",
+    "tink_typecrawler": "0.7.0"
+  },
+  "entries": [
+    {
+      "hash": "sha256-xk710AVa2GHE3USk9jO7qv1B3qbQ9wy2HkqBZSg14i0=",
+      "mirrors": [],
+      "path": "archives/tink_core-2,1,1.zip",
+      "url": "https://lib.haxe.org:443/files/3.0/tink_core-2,1,1.zip"
+    },
+    {
+      "hash": "sha256-NuoCevY/LCy8dg/TQZjq9HCQELSqyFvo02uMHt04v6M=",
+      "mirrors": [],
+      "path": "archives/tink_json-0,11,0.zip",
+      "url": "https://lib.haxe.org:443/files/3.0/tink_json-0,11,0.zip"
+    },
+    {
+      "hash": "sha256-6cPluojjmQCPfX5Npnq0hbz3Jsf1a6sly0jOaLIHbos=",
+      "mirrors": [],
+      "path": "archives/tink_macro-1,0,4.zip",
+      "url": "https://lib.haxe.org:443/files/3.0/tink_macro-1,0,4.zip"
+    },
+    {
+      "hash": "sha256-CL50OsjWYaAvRHwo0Ed3Wh7W5tasB53nFxHk4vVgHxk=",
+      "mirrors": [],
+      "path": "archives/tink_typecrawler-0,7,0.zip",
+      "url": "https://lib.haxe.org:443/files/3.0/tink_typecrawler-0,7,0.zip"
+    }
+  ],
+  "extraInputs": [],
+  "inputs": {
+    "build.hxml": {
+      "content": "-cp src\n-cp tests\n-lib tink_json\n-main Main\n--interp\n",
+      "sha256": "515adfa6472d01363e90515d41d517ea6bb840a185aa469cd943d9cd5e426b3a"
+    },
+    "haxelib.json": {
+      "content": "{\n  \"name\": \"purifier-example\",\n  \"version\": \"0.1.0\",\n  \"url\": \"https://nix-purifiers.github.io/\",\n  \"license\": \"MIT\",\n  \"tags\": [],\n  \"description\": \"A small locked Haxe library\",\n  \"releasenote\": \"Initial example\",\n  \"contributors\": [\"purifier\"],\n  \"classPath\": \"src\",\n  \"dependencies\": {\"tink_json\": \"\"}\n}\n",
+      "sha256": "a4b6a6e82d278f92106befbbb645b2f037a97def1ba614647216ebd238f9032e"
+    }
+  },
+  "nodes": [
+    {
+      "classPath": "src",
+      "entry": "archives/tink_core-2,1,1.zip",
+      "folder": "tink_core",
+      "name": "tink_core",
+      "version": "2.1.1",
+      "versionDir": "2,1,1"
+    },
+    {
+      "classPath": "src",
+      "entry": "archives/tink_json-0,11,0.zip",
+      "folder": "tink_json",
+      "name": "tink_json",
+      "version": "0.11.0",
+      "versionDir": "0,11,0"
+    },
+    {
+      "classPath": "src",
+      "entry": "archives/tink_macro-1,0,4.zip",
+      "folder": "tink_macro",
+      "name": "tink_macro",
+      "version": "1.0.4",
+      "versionDir": "1,0,4"
+    },
+    {
+      "classPath": "src",
+      "entry": "archives/tink_typecrawler-0,7,0.zip",
+      "folder": "tink_typecrawler",
+      "name": "tink_typecrawler",
+      "version": "0.7.0",
+      "versionDir": "0,7,0"
+    }
+  ],
+  "project": {
+    "classPath": "src",
+    "name": "purifier-example",
+    "package": true,
+    "version": "0.1.0"
+  },
+  "purifier": "haxelib",
+  "requested": [
+    "build.hxml",
+    "haxelib.json"
+  ],
+  "toolVersions": {
+    "haxe": "4.3.7",
+    "haxelib": "4.1.1",
+    "neko": "2.4.1",
+    "sdk": "eacccdf299d36d68175983d3e13fdb5162b90bb00a7c34193a139586502deb2c"
+  },
+  "version": 1
+}

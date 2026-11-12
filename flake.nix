@@ -70,6 +70,7 @@
         in
         {
           browser = import ./tests/browser.nix { inherit pkgs; };
+          python = import ./tests/python.nix { inherit pkgs; };
           inherit (build.packages) environment project;
           release = build.release;
           cli = self.packages.${system}.default;
