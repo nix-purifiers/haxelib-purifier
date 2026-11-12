@@ -91,7 +91,7 @@
     "haxe": "4.3.7",
     "haxelib": "4.1.1",
     "neko": "2.4.1",
-    "sdk": "0cd82106f275d0f489f9180daf314f866795ebc72bd11dcd69769af99c61d5bc"
+    "sdk": "eacccdf299d36d68175983d3e13fdb5162b90bb00a7c34193a139586502deb2c"
   },
   "version": 1
 }
