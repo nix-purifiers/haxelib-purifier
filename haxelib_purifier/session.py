@@ -19,7 +19,7 @@ def realize(root, companion, target="environment"):
             "build",
             "--impure",
             "--file",
-            HERE / "nix/realize.nix",
+            HERE / "pkgs/build-haxelib-project/realize.nix",
             "--argstr",
             "project",
             root,

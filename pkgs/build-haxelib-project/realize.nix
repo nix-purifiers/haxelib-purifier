@@ -16,7 +16,7 @@ let
     src = /. + project;
     lockFile = /. + companion;
   };
-  lock = import ./read-lock.nix { inherit (pkgs) lib; } args;
+  lock = import ../../lib-overlays/default/read-lock.nix { inherit (pkgs) lib; } args;
   output =
     if target == "environment" then
       pkgs.callPackage ./environment.nix {
@@ -28,7 +28,7 @@ let
           ;
       } { inherit lock; }
     else if target == "release" then
-      (pkgs.callPackage ./build-project.nix {
+      (pkgs.callPackage ./default.nix {
         inherit
           purifier
           nativeHaxelib

@@ -19,14 +19,14 @@
       forAll = nixpkgs.lib.genAttrs systems;
       overlay = final: prev: {
         haxelib-purifier = final.lib.makeScope final.newScope (scope: {
-          nativeHaxelib = scope.callPackage ./nix/native.nix { };
-          toolchain = scope.callPackage ./nix/toolchain.nix { };
-          sdkVersion = import ./nix/sdk-version.nix { nixpkgsSrc = nixpkgs; };
-          cli = scope.callPackage ./nix/cli.nix {
+          nativeHaxelib = scope.callPackage ./pkgs/build-haxelib-project/native.nix { };
+          toolchain = scope.callPackage ./pkgs/build-haxelib-project/toolchain.nix { };
+          sdkVersion = import ./pkgs/build-haxelib-project/sdk-version.nix { nixpkgsSrc = nixpkgs; };
+          cli = scope.callPackage ./pkgs/cli/default.nix {
             nixpkgsSrc = nixpkgs;
             purifierSrc = purifier;
           };
-          buildHaxeProject = scope.callPackage ./nix/build-project.nix {
+          buildHaxeProject = scope.callPackage ./pkgs/build-haxelib-project/default.nix {
             purifier = import (purifier + "/nix/lib") { inherit (final) lib; };
           };
         });
@@ -45,7 +45,7 @@
         cli = self.packages.${system}.default;
         sdk = (pkgsFor system).haxelib-purifier.toolchain;
       });
-      lib.haxelib-purifier.readLock = import ./nix/read-lock.nix { lib = nixpkgs.lib; };
+      lib.haxelib-purifier = (nixpkgs.lib.extend (import ./lib-overlays/default)).haxelib-purifier;
       apps = forAll (system: {
         default = {
           type = "app";
