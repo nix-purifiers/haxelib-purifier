@@ -144,3 +144,42 @@ Use `pythonTargets.library = { types = [ "example.Api" ]; module = "example_api"
 `packages.python-library` and `python.library` contain a native PEP 517 wheel, with a separate `proof` output. `projections.library.python` is an immutable wheelhouse for ordinary Python installers. The generated module retains the native Haxe Python class names. Its source bytes are checked in the raw wheel and retained with the native typed model, compiler input paths, hashes and ownership by project, captured library or selected Haxe SDK.
 
 Python imports introduced by Haxe extern declarations use explicit PEP 508 `requirements`. Supply their packages through `dependencies = [ otherPackage ];`, where each package exposes `projections.python`. The existing Python projector retains those runtime wheels and rewrites dependency versions to the selected immutable identities. This adapter does not infer Python distribution names from import names. Build tools are not runtime dependencies. Native Haxe static initializers retain their ordinary import behavior.
+
+## Lua library projections
+
+Declare native Haxe types with their original `@:expose` metadata and a Lua module
+name. The selected Lua interpreter and native dependencies remain original Nix
+packages built for that same interpreter:
+
+```nix
+project = pkgs.haxelib-purifier.buildHaxeProject {
+  src = ./.;
+  luaTargets.api = {
+    types = [ "ExampleApi" ];
+    module = "example_api";
+    lua = pkgs.lua5_4;
+    runtimeDependencies = with pkgs.lua54Packages; [
+      bit32 luautf8 lrexlib-pcre2 luv
+    ];
+  };
+};
+```
+
+`packages.lua-api` (also `lua.api`) contains the native module under
+`share/lua/5.4/`. Its `projections.lua` exposes `modulePath`, `module`, `abi`, and
+the selected native `runtime`. An ordinary consumer can add
+`${project.projections.api.lua.modulePath}/?.lua` to `LUA_PATH` and invoke
+`${project.projections.api.lua.runtime}/bin/lua` with `require("example_api")`.
+Native Haxe export names and the generated Lua file are preserved unchanged.
+
+The builder verifies native parsed and typed source ownership, every selected
+type's native export path, and actual Lua module/DSO searcher origins. Runtime
+module names and Haxe standard types cannot be shadowed. Missing native modules
+fail the build. Select the original dependency packages required by the code;
+the list above covers common native UTF-8, regex, bit-operation and event-loop
+uses. `classPaths` and `libraries` follow the existing captured-source rules.
+`vanilla = true` explicitly selects Haxe's native `lua-vanilla` option; it can
+change standard string behavior and does not supply missing external modules.
+
+This projection currently supports Lua 5.4. It does not generate a LuaRocks
+manifest or claim LuaJIT support.

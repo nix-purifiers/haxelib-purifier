@@ -224,6 +224,8 @@ let
       ) (target.libraries or [ ])
       && builtins.isBool (target.vanilla or false)
       && builtins.isList (target.runtimeDependencies or [ ])
+      && lib.isDerivation (target.lua or lua5_4)
+      && builtins.all lib.isDerivation (target.runtimeDependencies or [ ])
       && (target.lua or lua5_4).luaversion == "5.4"
     ) (builtins.attrNames luaTargets);
   specs = lib.mapAttrs (

@@ -37,9 +37,11 @@ def generate(spec, output, proof):
     command += target['types'] + ['--lua', str(generated), '--xml', str(typed), '-D', 'lua-ver=' + spec['abi']]
     if target.get('vanilla', False):
         command += ['-D', 'lua-vanilla']
-    result = subprocess.run(command, cwd=root, capture_output=True, text=True, check=True)
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True)
     (proof / 'compiler.stdout').write_text(result.stdout)
     (proof / 'compiler.stderr').write_text(result.stderr)
+    if result.returncode:
+        raise ValueError('native Haxe Lua compile failed: ' + result.stderr)
     capture = json.loads((Path(spec['environment']) / 'capture.json').read_text())
     owners = [(root, 'project source', None), (sdk, 'native Haxe SDK', None)]
     for node in capture['nodes']:
@@ -82,13 +84,26 @@ def generate(spec, output, proof):
         sources.append({'path': str(path), 'owner': owner, 'sha256': digest})
     if not sources or not any(row['owner'] == 'project source' for row in sources):
         raise ValueError('no project source in native compiler input evidence')
+    exports = []
+    for selected in target['types']:
+        node = next(node for node in typed_model.iter() if node.get('path') == selected and node.tag in ('class', 'enum', 'abstract', 'typedef'))
+        expose = node.find("./meta/m[@n=':expose']")
+        if expose is None:
+            raise ValueError('native Haxe Lua library requires exposed exports: ' + selected)
+        expressions = expose.findall('e')
+        export = json.loads(expressions[0].text) if expressions else selected
+        if not isinstance(export, str) or not export or any(not part for part in export.split('.')):
+            raise ValueError('native Lua expose metadata has an unsupported export path')
+        exports.append(export)
+    export_file = proof / 'exports.txt'
+    export_file.write_text('\n'.join(exports) + '\n')
     installed = output / 'share/lua' / spec['abi'] / (module.replace('.', '/') + '.lua')
     installed.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(generated, installed)
     env = dict(os.environ, LUA_PATH='', LUA_CPATH='')
     trace = proof / 'native-load.tsv'
     checker = Path(spec['checker'])
-    command = [spec['runtime'] + '/bin/lua', str(checker), module, str(output / 'share/lua' / spec['abi']), str(trace), spec['abi']]
+    command = [spec['runtime'] + '/bin/lua', str(checker), module, str(output / 'share/lua' / spec['abi']), str(trace), spec['abi'], str(export_file)]
     load = subprocess.run(command, capture_output=True, text=True, env=env)
     (proof / 'native-load.stdout').write_text(load.stdout)
     (proof / 'native-load.stderr').write_text(load.stderr)
@@ -113,7 +128,7 @@ def generate(spec, output, proof):
         raise ValueError('native Haxe compiler differs from captured SDK')
     model = {'kind': 'native-haxe-lua-module', 'producer': str(producer), 'sdk': str(sdk),
              'compilerVersion': actual_version, 'runtime': spec['runtime'], 'abi': spec['abi'],
-             'target': target, 'sources': sources, 'nativeModules': native_sources,
+             'target': target, 'exports': exports, 'sources': sources, 'nativeModules': native_sources,
              'typedModelSha256': sha(typed), 'generatedSha256': sha(generated), 'installed': str(installed)}
     (proof / 'model.json').write_text(json.dumps(model, indent=2) + '\n')
 
