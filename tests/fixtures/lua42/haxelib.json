@@ -1,0 +1,12 @@
+{
+  "name": "purifier-example",
+  "version": "0.1.0",
+  "url": "https://nix-purifiers.github.io/",
+  "license": "MIT",
+  "tags": [],
+  "description": "A small locked Haxe library",
+  "releasenote": "Initial example",
+  "contributors": ["purifier"],
+  "classPath": "src",
+  "dependencies": {"tink_json": ""}
+}
