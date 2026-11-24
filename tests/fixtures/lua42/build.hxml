@@ -1,0 +1,5 @@
+-cp src
+-cp tests
+-lib tink_json
+-main Main
+--interp

@@ -70,6 +70,7 @@
         in
         {
           derived-source = import ./tests/derived-source.nix { inherit pkgs; };
+          lua = import ./tests/lua.nix { inherit pkgs; };
           browser = import ./tests/browser.nix { inherit pkgs; };
           python = import ./tests/python.nix { inherit pkgs; };
           inherit (build.packages) environment project;

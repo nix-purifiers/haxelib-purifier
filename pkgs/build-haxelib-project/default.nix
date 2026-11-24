@@ -12,6 +12,7 @@
   sdkVersion,
   makeWrapper,
   esbuild,
+  lua5_4,
 }:
 {
   src,
@@ -20,6 +21,7 @@
   nativeBuildInputs ? [ ],
   javascriptTargets ? { },
   pythonTargets ? { },
+  luaTargets ? { },
   doCheck ? true,
   buildCommand ? "haxe build.hxml",
   checkCommand ? "",
@@ -179,6 +181,54 @@ let
       name:
       coordinate name && validPython pythonTargets.${name} && !(builtins.hasAttr name javascriptTargets)
     ) (builtins.attrNames pythonTargets);
+  validLuaTargets =
+    builtins.isAttrs luaTargets
+    && builtins.all (
+      name:
+      let
+        target = luaTargets.${name};
+      in
+      coordinate name
+      && !(builtins.hasAttr name javascriptTargets)
+      && !(builtins.hasAttr name pythonTargets)
+      && builtins.isAttrs target
+      && builtins.all (
+        key:
+        builtins.elem key [
+          "types"
+          "module"
+          "classPaths"
+          "libraries"
+          "lua"
+          "runtimeDependencies"
+          "vanilla"
+        ]
+      ) (builtins.attrNames target)
+      && builtins.isList (target.types or null)
+      && target.types != [ ]
+      && builtins.length target.types == builtins.length (lib.unique target.types)
+      && builtins.all (
+        type:
+        builtins.isString type
+        && builtins.match "[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*" type != null
+      ) target.types
+      && builtins.isString (target.module or null)
+      && builtins.match "[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*" target.module != null
+      && builtins.isList (target.classPaths or [ ])
+      && builtins.all (path: path == "." || relative path) (target.classPaths or [ ])
+      && builtins.isList (target.libraries or [ ])
+      && builtins.all (
+        library:
+        builtins.isString library
+        && (library == lock.data.project.name || builtins.any (node: node.name == library) lock.data.nodes)
+      ) (target.libraries or [ ])
+      && builtins.isBool (target.vanilla or false)
+      && builtins.isList (target.runtimeDependencies or [ ])
+      && lib.isDerivation (target.lua or lua5_4)
+      && !((target.lua or lua5_4) ? lua)
+      && builtins.all lib.isDerivation (target.runtimeDependencies or [ ])
+      && (target.lua or lua5_4).luaversion == "5.4"
+    ) (builtins.attrNames luaTargets);
   specs = lib.mapAttrs (
     name: target: writeText "haxe-javascript-${name}.json" (builtins.toJSON (effective target))
   ) javascriptTargets;
@@ -298,7 +348,30 @@ let
         inherit environment;
         targets = lib.mapAttrs (_: pythonEffective) pythonTargets;
       };
-  projections = lib.mapAttrs (_: artifact: artifact.projections) (javascript // python);
+  lua =
+    import ./lua-products.nix
+      {
+        inherit
+          lib
+          runCommand
+          python3
+          haxe
+          purifier
+          lua5_4
+          ;
+      }
+      {
+        producer = rawProject;
+        inherit environment;
+        targets = lib.mapAttrs (
+          _: target:
+          target
+          // {
+            libraries = target.libraries or (lib.optional lock.data.project.package lock.data.project.name);
+          }
+        ) luaTargets;
+      };
+  projections = lib.mapAttrs (_: artifact: artifact.projections) (javascript // python // lua);
   project = rawProject // {
     inherit projections;
   };
@@ -320,6 +393,8 @@ let
       '';
 in
 assert lock.problems == [ ];
+assert lib.assertMsg validLuaTargets
+  "luaTargets requires selected native types, safe module/class paths, captured libraries and an original Lua 5.4 runtime with matching dependencies";
 assert lib.assertMsg validPythonTargets
   "haxelib-purifier: pythonTargets requires selected native types, relative class paths, captured libraries, Python module/distribution/version, explicit requirements and typed dependencies; target names must be distinct";
 assert lib.assertMsg validTargets
@@ -338,8 +413,14 @@ assert lib.assertMsg (
     inherit project environment;
   }
   // lib.mapAttrs' (name: artifact: lib.nameValuePair "javascript-${name}" artifact) javascript
-  // lib.mapAttrs' (name: artifact: lib.nameValuePair "python-${name}" artifact) python;
-  inherit javascript python projections;
+  // lib.mapAttrs' (name: artifact: lib.nameValuePair "python-${name}" artifact) python
+  // lib.mapAttrs' (name: artifact: lib.nameValuePair "lua-${name}" artifact) lua;
+  inherit
+    javascript
+    python
+    lua
+    projections
+    ;
   tests = project;
   inherit release;
   fetches = lock.entries;
