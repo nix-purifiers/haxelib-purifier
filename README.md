@@ -149,7 +149,8 @@ Python imports introduced by Haxe extern declarations use explicit PEP 508 `requ
 
 Declare native Haxe types with their original `@:expose` metadata and a Lua module
 name. The selected Lua interpreter and native dependencies remain original Nix
-packages built for that same interpreter:
+packages built for that same base interpreter. Pass dependency packages through
+`runtimeDependencies`; a prewrapped `withPackages` interpreter is rejected:
 
 ```nix
 project = pkgs.haxelib-purifier.buildHaxeProject {

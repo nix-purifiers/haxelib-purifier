@@ -31,6 +31,14 @@ let
     '';
   a = consumer first 42;
   b = consumer second 43;
+  wrapped = pkgs.haxelib-purifier.buildHaxeProject {
+    src = ./fixtures/lua42;
+    luaTargets.api = {
+      types = [ "LuaApi" ];
+      module = "example_api";
+      lua = pkgs.lua5_4.withPackages (p: [ p.bit32 ]);
+    };
+  };
   badABI = pkgs.haxelib-purifier.buildHaxeProject {
     src = ./fixtures/lua42;
     luaTargets.api = {
@@ -41,6 +49,7 @@ let
   };
 in
 assert !(builtins.tryEval badABI.lua.api.drvPath).success;
+assert !(builtins.tryEval wrapped.lua.api.drvPath).success;
 pkgs.runCommand "haxe-native-lua-consumers"
   {
     nativeBuildInputs = [ pkgs.python3 ];
