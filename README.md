@@ -83,6 +83,13 @@ It exposes evaluation-known `packages`, `tests`, `release` and `fetches`.
 `checkCommand`, `installCommand`, `doCheck` or `nativeBuildInputs` for the project.
 The default build command is `haxe build.hxml`; the default check command is empty.
 
+A derivation-backed `src` can use an explicit, authored `lockFile` outside that
+output. Evaluation validates the capture without reading the source output;
+project and release builders compare the actual manifest, HXML and extra input
+bytes with the capture before using them. Such sources are copied in full: apply
+any source filtering in the producing derivation. `srcFilter` applies to ordinary
+source paths. A lock stored only inside a derivation still requires IFD to read.
+
 ## JavaScript browser projections
 
 Declare a browser entrypoint independently of the project's normal HXML target:

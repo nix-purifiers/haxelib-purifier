@@ -1,5 +1,7 @@
 """Project native repository configuration beside readonly library sources."""
 
+from common import inputs
+
 import json
 from pathlib import Path
 import subprocess
@@ -9,6 +11,8 @@ manifest, environment, repository, source, installer, inspector = map(
     Path, sys.argv[1:]
 )
 data = json.loads(manifest.read_text())
+if data["inputs"] != inputs(source.resolve(), data.get("extraInputs", [])):
+    raise ValueError("Haxe metadata changed; run haxelib-purifier lock --update")
 repository.mkdir(parents=True, exist_ok=True)
 for node in data["nodes"]:
     folder = repository / node["folder"]
