@@ -18,12 +18,16 @@ stdenvNoCC.mkDerivation {
   pname = "haxelib-purifier";
   version = "0.1.0";
   src = ../..;
-  nativeBuildInputs = [ makeWrapper ];
+  nativeBuildInputs = [
+    makeWrapper
+    python3
+  ];
   dontBuild = true;
   installPhase = ''
     mkdir -p "$out/bin" "$out/lib/haxelib-purifier"
     cp -r haxelib_purifier pkgs lib-overlays "$out/lib/haxelib-purifier/"
     install -m755 bin/haxelib-purifier "$out/bin/haxelib-purifier"
+    patchShebangs "$out/bin/haxelib-purifier"
     substituteInPlace "$out/lib/haxelib-purifier/pkgs/build-haxelib-project/realize.nix" \
       --replace-fail '@nixpkgs@' '${nixpkgsSrc}' --replace-fail '@purifier@' '${purifierSrc}'
     wrapProgram "$out/bin/haxelib-purifier" \

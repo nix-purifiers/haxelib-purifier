@@ -74,6 +74,9 @@
           inherit (build.packages) environment project;
           release = build.release;
           cli = self.packages.${system}.default;
+          cli-help = pkgs.runCommand "haxelib-installed-cli-help" { } ''
+            ${self.packages.${system}.default}/bin/haxelib-purifier --help > "$out"
+          '';
           installed = pkgs.runCommand "haxe-installed-consumer" { } ''
             ${build.packages.project}/bin/haxe -cp ${consumer} -lib purifier-example --run Consumer > answer
             mkdir "$out"
