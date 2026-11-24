@@ -11,6 +11,7 @@ for index, (name, diagnostic) in enumerate([
     ('missing-dependency', 'native Lua module load failed'),
     ('module-shadow', 'generated Lua module shadows a selected runtime dependency'),
     ('unexposed', 'native Haxe Lua library requires exposed exports'),
+    ('export-collision', 'native Lua selected export paths collide'),
     ('sdk-shadow', 'Lua target shadows a native Haxe SDK type'),
 ]):
     root = Path.cwd() / str(index)
@@ -22,6 +23,8 @@ for index, (name, diagnostic) in enumerate([
         request['target']['module'] = 'rex_pcre2'
     elif name == 'unexposed':
         request['target']['types'] = ['PurifierExample']
+    elif name == 'export-collision':
+        request['target']['types'] = ['LuaApi', 'DuplicateLuaApi']
     else:
         request['target'].update(types=['haxe.io.BytesBuffer'], classPaths=['shadow'])
     (root / 'request.json').write_text(json.dumps(request))

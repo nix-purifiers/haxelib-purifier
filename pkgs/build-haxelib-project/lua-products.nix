@@ -39,6 +39,7 @@ lib.mapAttrs (
             runtime = toString runtime;
             runtimeOutputs = map toString runtime.paths;
             abi = lua.luaversion;
+            luaVersion = lua.version;
             target = original;
             checker = ./lua-load.lua;
           };

@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -37,6 +38,7 @@ def generate(spec, output, proof):
     command += target['types'] + ['--lua', str(generated), '--xml', str(typed), '-D', 'lua-ver=' + spec['abi']]
     if target.get('vanilla', False):
         command += ['-D', 'lua-vanilla']
+    compiler_command = list(command)
     result = subprocess.run(command, cwd=root, capture_output=True, text=True)
     (proof / 'compiler.stdout').write_text(result.stdout)
     (proof / 'compiler.stderr').write_text(result.stderr)
@@ -95,12 +97,18 @@ def generate(spec, output, proof):
         if not isinstance(export, str) or not export or any(not part for part in export.split('.')):
             raise ValueError('native Lua expose metadata has an unsupported export path')
         exports.append(export)
+    if len(exports) != len(set(exports)):
+        raise ValueError('native Lua selected export paths collide')
     export_file = proof / 'exports.txt'
     export_file.write_text('\n'.join(exports) + '\n')
     installed = output / 'share/lua' / spec['abi'] / (module.replace('.', '/') + '.lua')
     installed.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(generated, installed)
     env = dict(os.environ, LUA_PATH='', LUA_CPATH='')
+    lua_version = subprocess.run([spec['runtime'] + '/bin/lua', '-v'], capture_output=True, text=True, check=True)
+    lua_version = (lua_version.stdout + lua_version.stderr).strip()
+    if not re.match(r'Lua ' + re.escape(spec['luaVersion']) + r'(?:\s|$)', lua_version):
+        raise ValueError('native Lua interpreter differs from its original selected Nix input')
     trace = proof / 'native-load.tsv'
     checker = Path(spec['checker'])
     command = [spec['runtime'] + '/bin/lua', str(checker), module, str(output / 'share/lua' / spec['abi']), str(trace), spec['abi'], str(export_file)]
@@ -127,7 +135,7 @@ def generate(spec, output, proof):
     if actual_version != capture['toolVersions']['haxe']:
         raise ValueError('native Haxe compiler differs from captured SDK')
     model = {'kind': 'native-haxe-lua-module', 'producer': str(producer), 'sdk': str(sdk),
-             'compilerVersion': actual_version, 'runtime': spec['runtime'], 'abi': spec['abi'],
+             'compilerVersion': actual_version, 'compilerCommand': compiler_command, 'nativeLoadCommand': command, 'runtime': spec['runtime'], 'abi': spec['abi'], 'luaVersion': lua_version,
              'target': target, 'exports': exports, 'sources': sources, 'nativeModules': native_sources,
              'typedModelSha256': sha(typed), 'generatedSha256': sha(generated), 'installed': str(installed)}
     (proof / 'model.json').write_text(json.dumps(model, indent=2) + '\n')
