@@ -1,5 +1,7 @@
 """Create a deterministic native ZIP and verify it with Haxelib's reader."""
 
+from common import inputs
+
 import json
 from pathlib import Path
 import subprocess
@@ -8,6 +10,8 @@ import zipfile
 
 manifest, source, output, inspector = map(Path, sys.argv[1:])
 data = json.loads(manifest.read_text())
+if data["inputs"] != inputs(source.resolve(), data.get("extraInputs", [])):
+    raise ValueError("Haxe metadata changed; run haxelib-purifier lock --update")
 expected = {k: data["project"][k] for k in ("name", "version", "classPath")}
 actual = json.loads(
     subprocess.check_output([inspector, "json", source / "haxelib.json"], text=True)

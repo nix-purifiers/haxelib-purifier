@@ -13,13 +13,26 @@ let
     s: builtins.isString s && s != "." && s != ".." && builtins.match "[A-Za-z0-9_.-]+" s != null;
   relative =
     s: builtins.isString s && !(lib.hasPrefix "/" s) && !(builtins.elem ".." (lib.splitString "/" s));
-  dir = builtins.readDir src;
-  requested = builtins.filter (n: n == "haxelib.json" || lib.hasSuffix ".hxml" n) (
-    builtins.attrNames dir
+  # Derivation outputs are opaque during evaluation. Their authored capture is
+  # checked here; the builder compares actual source metadata before use.
+  derivedSource = builtins.any (context: context ? outputs || context ? allOutputs) (
+    builtins.attrValues (builtins.getContext "${src}")
   );
+  dir = if derivedSource then { } else builtins.readDir src;
+  requested =
+    if derivedSource then
+      (data.requested or [ ])
+    else
+      builtins.filter (n: n == "haxelib.json" || lib.hasSuffix ".hxml" n) (builtins.attrNames dir);
   valid =
     (data.version or null) == 1
     && (data.purifier or null) == "haxelib"
+    && builtins.isList requested
+    && builtins.all (
+      name:
+      relative name && (name == "haxelib.json" || lib.hasSuffix ".hxml" name) && !(lib.hasInfix "/" name)
+    ) requested
+    && requested == builtins.sort builtins.lessThan (lib.unique requested)
     && requested != [ ]
     && (data.requested or null) == requested
     && builtins.isList (data.extraInputs or null)
@@ -33,9 +46,14 @@ let
       relative name
       && builtins.isAttrs inputs.${name}
       && builtins.isString (inputs.${name}.content or null)
-      && builtins.pathExists (src + "/${name}")
-      && (builtins.readDir (dirOf (src + "/${name}"))).${baseNameOf name} == "regular"
-      && builtins.hashFile "sha256" (src + "/${name}") == (inputs.${name}.sha256 or null)
+      && (
+        derivedSource
+        || (
+          builtins.pathExists (src + "/${name}")
+          && (builtins.readDir (dirOf (src + "/${name}"))).${baseNameOf name} == "regular"
+          && builtins.hashFile "sha256" (src + "/${name}") == (inputs.${name}.sha256 or null)
+        )
+      )
       && builtins.hashString "sha256" inputs.${name}.content == inputs.${name}.sha256
     ) (builtins.attrNames inputs)
     && builtins.isAttrs (data.project or null)
@@ -43,7 +61,7 @@ let
     && safe (data.project.version or null)
     && relative (data.project.classPath or null)
     && builtins.isBool (data.project.package or null)
-    && data.project.package == (dir ? "haxelib.json")
+    && data.project.package == builtins.elem "haxelib.json" requested
     && builtins.isList entries
     && builtins.isList nodes
     && builtins.all (
@@ -92,7 +110,7 @@ let
 in
 {
   purifier = "haxelib";
-  inherit data entries;
+  inherit data entries derivedSource;
   problems = lib.optional (
     !valid
   ) "Haxelib lock is missing, stale, or unsupported; run haxelib-purifier lock --update";

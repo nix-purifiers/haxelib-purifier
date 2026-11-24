@@ -60,3 +60,21 @@ with tempfile.TemporaryDirectory() as temporary:
     (source / "haxelib.json").write_text("; stale\n")
     assert problems()["problems"]
 print("Haxelib lock validation passed without IFD")
+
+# A fresh, unbuilt producer must remain opaque, including its source subpath.
+with tempfile.TemporaryDirectory(prefix="haxelib-derived-") as temporary:
+    name = Path(temporary).name
+    expression = f"""let
+      f = builtins.getFlake {json.dumps(str(HERE))};
+      system = builtins.currentSystem;
+      pkgs = import f.inputs.nixpkgs {{ inherit system; overlays = [f.overlays.default]; }};
+      source = pkgs.runCommand "{name}" {{}} "mkdir -p $out/source; cp -r {HERE / 'examples/minimal'}/. $out/source/";
+      build = pkgs.haxelib-purifier.buildHaxeProject {{
+        src = "${{source}}/source";
+        lockFile = {HERE / 'examples/minimal/haxelib-purifier.lock.json'};
+      }};
+      in {{ source = source.outPath; project = build.packages.project.drvPath; release = build.release.drvPath; }}"""
+    result = json.loads(subprocess.run(["nix", "eval", "--impure", "--json", "--option", "allow-import-from-derivation", "false", "--expr", expression], check=True, capture_output=True, text=True).stdout)
+    assert not Path(result["source"]).exists()
+    assert result["project"].endswith(".drv") and result["release"].endswith(".drv")
+print("Fresh derived source and subpath evaluated without realization or IFD")
